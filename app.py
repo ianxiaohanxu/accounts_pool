@@ -7,6 +7,9 @@ import flask
 from flask import Flask
 from flask import request
 
+
+abs_path = os.path.realpath(__file__)
+config_path = os.path.join(os.path.dirname(abs_path), "config.json")
 app = Flask(__name__)
 
 #available_accounts = [
@@ -23,7 +26,7 @@ def _get_config():
     '''
     Get accounts configuration from "config.json"
     '''
-    with open("config.json", "r") as f:
+    with open(config_path, "r") as f:
         content = json.load(f)
     return content["available_accounts"], content["accounts_in_use"]
 
@@ -35,7 +38,7 @@ def _write_config(available_accounts, accounts_in_use):
             "available_accounts": available_accounts,
             "accounts_in_use": accounts_in_use
     }
-    with open("config.json", "w") as f:
+    with open(config_path, "w") as f:
         json.dump(content, f, indent=4)
 
 def _random_get():
@@ -113,3 +116,5 @@ def free_all():
     _free_all()
     return "All accounts available now."
 
+if __name__ == "__main__":
+    app.run()
