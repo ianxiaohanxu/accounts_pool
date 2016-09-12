@@ -6,6 +6,7 @@ import simplejson as json
 import flask
 from flask import Flask
 from flask import request
+from flask import render_template
 
 
 abs_path = os.path.realpath(__file__)
@@ -115,6 +116,10 @@ def free():
 def free_all():
     _free_all()
     return "All accounts available now."
+
+@app.route('/stats.html', methods=["GET"])
+def performance_stats():
+    return render_template("stats.html")
 
 if __name__ == "__main__":
     app.run()
