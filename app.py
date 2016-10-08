@@ -56,6 +56,25 @@ def _random_get():
     except IndexError:
         return "No available accounts now."
 
+def _first_get(special_type):
+    '''
+    Get an available sepcial account from "available_accounts" for the first time
+    according to the special_type(0:none,1:vip)
+    '''
+    available_accounts, accounts_in_use = _get_config()
+    try:
+        for account in available_accounts:
+            num = len(account)-1
+            if num >= 2:
+                if special_type == 1:
+                    if account[num] == "vip":
+                        available_accounts.remove(account)
+                        accounts_in_use.append(account+[int(time.time())])
+                        _write_config(available_accounts, accounts_in_use)
+                        return account
+    except IndexError:
+        return "No available accounts now."
+        
 def _auto_free():
     '''
     Free some used account according to the period it held for
@@ -64,8 +83,9 @@ def _auto_free():
     available_accounts, accounts_in_use = _get_config()
     affected_accounts = []
     for account in accounts_in_use:
-        if (cur_time - account[2]) > 1800:
-            available_accounts.append(account[:2])
+        index = len(account)-1
+        if (cur_time - account[index]) > 1800:
+            available_accounts.append(account[:index])
             affected_accounts.append(account)
     for account in affected_accounts:
         accounts_in_use.remove(account)
@@ -78,7 +98,8 @@ def _free_account(cellnum):
     available_accounts, accounts_in_use = _get_config()
     for account in accounts_in_use:
         if account[0] == cellnum:
-            available_accounts.append(account[:2])
+            index = len(account)-1
+            available_accounts.append(account[:index])
             accounts_in_use.remove(account)
             _write_config(available_accounts, accounts_in_use)
             return
@@ -89,7 +110,8 @@ def _free_all():
     '''
     available_accounts, accounts_in_use = _get_config()
     for account in accounts_in_use:
-        available_accounts.append(account[:2])
+        num = len(account)-1
+        available_accounts.append(account[:num])
     accounts_in_use = []
     _write_config(available_accounts, accounts_in_use)
 
@@ -102,7 +124,12 @@ def show_all_accounts():
 @app.route('/get_account.json', methods=["POST"])
 def get_account():
     _auto_free()
-    resp = _random_get()
+    req = request.get_json(force=True)
+    special_type = req["special_type"]
+    if special_type == 0:
+        resp = _random_get()
+    elif special_type == 1:
+        resp = _first_get(special_type)
     return flask.jsonify(resp)
 
 @app.route('/free.json', methods=["POST"])
