@@ -42,36 +42,17 @@ def _write_config(available_accounts, accounts_in_use):
     with open(config_path, "w") as f:
         json.dump(content, f, indent=4)
 
-def _random_get():
+def _random_get(special_type):
     '''
     Get an available account from "available_accounts" randomly
     '''
     available_accounts, accounts_in_use = _get_config()
     try:
-        target = random.choice(available_accounts)
-        available_accounts.remove(target)
-        accounts_in_use.append(target+[int(time.time())])
+        target = random.choice(available_accounts[special_type])
+        available_accounts[special_type].remove(target)
+        accounts_in_use.append(target+[special_type]+[int(time.time())])
         _write_config(available_accounts, accounts_in_use)
         return target
-    except IndexError:
-        return "No available accounts now."
-
-def _first_get(special_type):
-    '''
-    Get an available sepcial account from "available_accounts" for the first time
-    according to the special_type(0:none,1:vip)
-    '''
-    available_accounts, accounts_in_use = _get_config()
-    try:
-        for account in available_accounts:
-            num = len(account)-1
-            if num >= 2:
-                if special_type == 1:
-                    if account[num] == "vip":
-                        available_accounts.remove(account)
-                        accounts_in_use.append(account+[int(time.time())])
-                        _write_config(available_accounts, accounts_in_use)
-                        return account
     except IndexError:
         return "No available accounts now."
         
@@ -83,9 +64,9 @@ def _auto_free():
     available_accounts, accounts_in_use = _get_config()
     affected_accounts = []
     for account in accounts_in_use:
-        index = len(account)-1
         if (cur_time - account[index]) > 1800:
-            available_accounts.append(account[:index])
+            special_kind = account[2]
+            available_accounts[special_kind].append(account[:2])
             affected_accounts.append(account)
     for account in affected_accounts:
         accounts_in_use.remove(account)
@@ -98,8 +79,8 @@ def _free_account(cellnum):
     available_accounts, accounts_in_use = _get_config()
     for account in accounts_in_use:
         if account[0] == cellnum:
-            index = len(account)-1
-            available_accounts.append(account[:index])
+            special_kind = account[2]
+            available_accounts[special_kind].append(account[:2])
             accounts_in_use.remove(account)
             _write_config(available_accounts, accounts_in_use)
             return
@@ -110,8 +91,8 @@ def _free_all():
     '''
     available_accounts, accounts_in_use = _get_config()
     for account in accounts_in_use:
-        num = len(account)-1
-        available_accounts.append(account[:num])
+        special_kind = account[2]
+        available_accounts[special_kind].append(account[:2])
     accounts_in_use = []
     _write_config(available_accounts, accounts_in_use)
 
@@ -126,10 +107,7 @@ def get_account():
     _auto_free()
     req = request.get_json(force=True)
     special_type = req["special_type"]
-    if special_type == 0:
-        resp = _random_get()
-    elif special_type == 1:
-        resp = _first_get(special_type)
+    resp = _random_get(special_type)
     return flask.jsonify(resp)
 
 @app.route('/free.json', methods=["POST"])
