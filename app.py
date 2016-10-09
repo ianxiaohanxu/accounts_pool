@@ -31,6 +31,15 @@ def _get_config():
         content = json.load(f)
     return content["available_accounts"], content["accounts_in_use"]
 
+def _get_keys():
+    '''
+    Get special keys configuration from "config.json"
+    '''
+    with open(config_path, "r") as f:
+        content = json.load(f)
+        special_key = content["available_accounts"].keys()
+    return special_key
+    
 def _write_config(available_accounts, accounts_in_use):
     '''
     Write current accounts config into "config.json"
@@ -64,7 +73,7 @@ def _auto_free():
     available_accounts, accounts_in_use = _get_config()
     affected_accounts = []
     for account in accounts_in_use:
-        if (cur_time - account[index]) > 1800:
+        if (cur_time - account[3]) > 1800:
             special_kind = account[2]
             available_accounts[special_kind].append(account[:2])
             affected_accounts.append(account)
@@ -102,11 +111,27 @@ def show_all_accounts():
     resp = {"available_accounts": available_accounts, "accounts_in_use": accounts_in_use}
     return flask.jsonify(resp)
 
+@app.route('/key', methods=["GET"])
+def show_all_keys():
+    keys = _get_keys()
+    return flask.jsonify(keys)
+    
 @app.route('/get_account.json', methods=["POST"])
 def get_account():
     _auto_free()
     req = request.get_json(force=True)
-    special_type = req["special_type"]
+    if "special_type" in req :
+        config_keys = _get_keys()
+        num = len(config_keys)
+        special_type = ''
+        for i in range(0,num):
+            if req["special_type"]==config_keys[i] :
+                special_type = req["special_type"]
+            break
+        if special_type == '':
+            special_type = "normal"
+    else :
+        special_type = "normal"
     resp = _random_get(special_type)
     return flask.jsonify(resp)
 
