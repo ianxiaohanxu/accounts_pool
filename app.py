@@ -122,14 +122,10 @@ def get_account():
     req = request.get_json(force=True)
     if "special_type" in req :
         config_keys = _get_keys()
-        num = len(config_keys)
-        special_type = ''
-        for i in range(0,num):
-            if req["special_type"]==config_keys[i] :
+        if req["special_type"] in config_keys :
                 special_type = req["special_type"]
-            break
-        if special_type == '':
-            special_type = "normal"
+        else :
+            return "Please ask account with available keys, you can GET /key for available keys."
     else :
         special_type = "normal"
     resp = _random_get(special_type)
