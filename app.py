@@ -119,7 +119,11 @@ def show_all_keys():
 @app.route('/get_account.json', methods=["POST"])
 def get_account():
     _auto_free()
-    req = request.get_json(force=True)
+    req = request.get_json(force=True, silent=True)
+    if req is None:
+        req = {
+            "special_type": "normal"
+        }
     if "special_type" in req :
         config_keys = _get_keys()
         if req["special_type"] in config_keys :
@@ -127,7 +131,7 @@ def get_account():
         else :
             return "Please ask account with available keys, you can GET /key for available keys."
     else :
-        special_type = "normal"
+        return "Please ask account with 'special_type' as the key."
     resp = _random_get(special_type)
     return flask.jsonify(resp)
 
@@ -148,4 +152,4 @@ def performance_stats():
     return render_template("stats.html")
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
